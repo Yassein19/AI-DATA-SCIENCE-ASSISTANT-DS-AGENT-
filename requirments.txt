@@ -1,0 +1,11 @@
+streamlit 
+pandas 
+numpy 
+matplotlib 
+seaborn 
+plotly 
+openpyxl 
+sqlalchemy 
+anthropic
+statsmodels
+streamlit run ds_agent.py

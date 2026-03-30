@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Data Science Agent — Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c12;
+    --surface: #10141e;
+    --card: #161b2a;
+    --border: #1e2840;
+    --accent1: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --accent5: #f43f5e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated grid background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 60px; }
+  header .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent1);
+    border: 1px solid var(--accent1);
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+    animation: fadeDown 0.6s ease both;
+  }
+  header h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    animation: fadeDown 0.6s 0.1s ease both;
+  }
+  header h1 span { color: var(--accent1); }
+  header p {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 1rem;
+    font-family: var(--mono);
+    animation: fadeDown 0.6s 0.2s ease both;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    margin-top: 56px;
+  }
+
+  /* ── Flow diagram ── */
+  .flow-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 60px;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .flow-row:nth-child(1) { animation-delay: 0.1s; }
+  .flow-row:nth-child(2) { animation-delay: 0.2s; }
+  .flow-row:nth-child(3) { animation-delay: 0.3s; }
+  .flow-row:nth-child(4) { animation-delay: 0.4s; }
+  .flow-row:nth-child(5) { animation-delay: 0.5s; }
+  .flow-row:nth-child(6) { animation-delay: 0.6s; }
+
+  .flow-connector-v {
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent1), var(--accent2));
+    margin: 0 auto;
+    height: 32px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  /* ── Layer cards ── */
+  .layer {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+  }
+  .layer:hover {
+    box-shadow: 0 0 0 1px var(--accent1), 0 8px 32px rgba(0,229,255,0.12);
+    border-color: var(--accent1);
+  }
+  .layer:hover .layer-header { background: rgba(0,229,255,0.06); }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s;
+  }
+  .layer-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+  .layer-title { font-size: 1.05rem; font-weight: 600; }
+  .layer-subtitle { font-size: 0.75rem; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .layer-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+
+  .layer-body {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  /* ── Component chips ── */
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: all 0.25s;
+  }
+  .chip:hover {
+    border-color: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(124,58,237,0.2);
+  }
+  .chip-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chip-desc { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); line-height: 1.5; }
+
+  /* ── Color variants ── */
+  .c1 .layer-header { border-left: 3px solid var(--accent1); }
+  .c1 .layer-badge { background: rgba(0,229,255,0.1); color: var(--accent1); border: 1px solid rgba(0,229,255,0.2); }
+  .c1 .chip-dot { background: var(--accent1); }
+
+  .c2 .layer-header { border-left: 3px solid var(--accent2); }
+  .c2 .layer-badge { background: rgba(124,58,237,0.1); color: var(--accent2); border: 1px solid rgba(124,58,237,0.2); }
+  .c2 .chip-dot { background: var(--accent2); }
+
+  .c3 .layer-header { border-left: 3px solid var(--accent3); }
+  .c3 .layer-badge { background: rgba(245,158,11,0.1); color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+  .c3 .chip-dot { background: var(--accent3); }
+
+  .c4 .layer-header { border-left: 3px solid var(--accent4); }
+  .c4 .layer-badge { background: rgba(16,185,129,0.1); color: var(--accent4); border: 1px solid rgba(16,185,129,0.2); }
+  .c4 .chip-dot { background: var(--accent4); }
+
+  .c5 .layer-header { border-left: 3px solid var(--accent5); }
+  .c5 .layer-badge { background: rgba(244,63,94,0.1); color: var(--accent5); border: 1px solid rgba(244,63,94,0.2); }
+  .c5 .chip-dot { background: var(--accent5); }
+
+  /* ── Detail panel ── */
+  .detail-panel {
+    background: var(--card);
+    border: 1px solid var(--accent1);
+    border-radius: 12px;
+    padding: 28px;
+    margin-top: 48px;
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+  .detail-panel.active { display: block; }
+  .detail-panel h2 { font-size: 1.4rem; margin-bottom: 6px; }
+  .detail-panel .meta { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .detail-card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--accent1); }
+  .detail-card p { font-size: 0.78rem; color: var(--muted); font-family: var(--mono); line-height: 1.6; }
+  .detail-card ul { list-style: none; }
+  .detail-card ul li { font-size: 0.78rem; color: var(--muted); font-family: var(--mono); line-height: 1.8; }
+  .detail-card ul li::before { content: "→ "; color: var(--accent1); }
+  .close-btn {
+    float: right;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .close-btn:hover { border-color: var(--accent5); color: var(--accent5); }
+
+  /* ── Data flow legend ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 48px 0 24px;
+    padding: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── Tech stack table ── */
+  .tech-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .tech-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tech-table td {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    border-bottom: 1px solid rgba(30,40,64,0.5);
+    font-family: var(--mono);
+  }
+  .tech-table tr:hover td { background: rgba(0,229,255,0.03); }
+  .tech-table .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    background: rgba(0,229,255,0.08);
+    color: var(--accent1);
+    border: 1px solid rgba(0,229,255,0.15);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Pulse indicator ── */
+  .pulse {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent4);
+    box-shadow: 0 0 0 0 rgba(16,185,129,0.5);
+    animation: pulse 1.8s infinite;
+    margin-right: 8px;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+    70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+
+  /* Hint */
+  .hint { text-align: center; font-family: var(--mono); font-size: 11px; color: var(--muted); margin: -30px 0 40px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header>
+    <div class="badge">SYSTEM ARCHITECTURE v1.0</div>
+    <h1>AI Data Science <span>Agent</span></h1>
+    <p><span class="pulse"></span>Streamlit · Pandas · Plotly · Claude Sonnet 4 · Anthropic API</p>
+  </header>
+
+  <p class="hint">↓ click any layer to explore details</p>
+
+  <!-- Architecture Flow -->
+  <div class="flow-container" id="flowContainer">
+
+    <!-- Layer 1: User Interface -->
+    <div class="flow-row">
+      <div class="layer c1" onclick="showDetail('ui')">
+        <div class="layer-header">
+          <div class="layer-icon">🖥️</div>
+          <div>
+            <div class="layer-title">User Interface Layer</div>
+            <div class="layer-subtitle">Frontend · Interaction · Presentation</div>
+          </div>
+          <span class="layer-badge">LAYER 1</span>
+        </div>
+        <div class="layer-body">
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Streamlit App</div>
+            <div class="chip-desc">Multi-page web interface rendered in the browser via Streamlit server</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Sidebar Controls</div>
+            <div class="chip-desc">API key input, data source selector, session configuration</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Tab Navigation</div>
+            <div class="chip-desc">Step-by-step tabs: Load → Define → Clean → EDA</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>File Uploader</div>
+            <div class="chip-desc">Native Streamlit widget for CSV, Excel, JSON, TXT uploads</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row"><div class="flow-connector-v"></div></div>
+
+    <!-- Layer 2: Data Ingestion -->
+    <div class="flow-row">
+      <div class="layer c2" onclick="showDetail('ingestion')">
+        <div class="layer-header">
+          <div class="layer-icon">📥</div>
+          <div>
+            <div class="layer-title">Data Ingestion Layer</div>
+            <div class="layer-subtitle">Multi-source loading · Parsing · Normalisation</div>
+          </div>
+          <span class="layer-badge">LAYER 2</span>
+        </div>
+        <div class="layer-body">
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>CSV / Excel Loader</div>
+            <div class="chip-desc">pandas.read_csv / read_excel via openpyxl engine</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>SQL Connector</div>
+            <div class="chip-desc">SQLAlchemy engine · supports SQLite, PostgreSQL, MySQL</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>JSON / API Parser</div>
+            <div class="chip-desc">json.load + pd.json_normalize for nested structures</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Text Processor</div>
+            <div class="chip-desc">Line-by-line text ingestion into structured DataFrame</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row"><div class="flow-connector-v"></div></div>
+
+    <!-- Layer 3: Core Processing -->
+    <div class="flow-row">
+      <div class="layer c3" onclick="showDetail('processing')">
+        <div class="layer-header">
+          <div class="layer-icon">⚙️</div>
+          <div>
+            <div class="layer-title">Core Processing Layer</div>
+            <div class="layer-subtitle">Cleaning · Transformation · Feature Engineering</div>
+          </div>
+          <span class="layer-badge">LAYER 3</span>
+        </div>
+        <div class="layer-body">
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Data Quality Engine</div>
+            <div class="chip-desc">Missing value detection, duplicate scanning, dtype analysis</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Auto-Clean Pipeline</div>
+            <div class="chip-desc">Drop duplicates, impute nulls, strip whitespace, drop high-null cols</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>df_summary Builder</div>
+            <div class="chip-desc">Generates compact text profile of DataFrame sent to Claude</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Session State</div>
+            <div class="chip-desc">st.session_state stores cleaned df & problem definition across tabs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row"><div class="flow-connector-v"></div></div>
+
+    <!-- Layer 4: AI Brain -->
+    <div class="flow-row">
+      <div class="layer c5" onclick="showDetail('ai')">
+        <div class="layer-header">
+          <div class="layer-icon">🤖</div>
+          <div>
+            <div class="layer-title">AI Intelligence Layer</div>
+            <div class="layer-subtitle">Claude Sonnet 4 · Anthropic API · Natural Language</div>
+          </div>
+          <span class="layer-badge">LAYER 4</span>
+        </div>
+        <div class="layer-body">
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Problem Definer</div>
+            <div class="chip-desc">Analyses dataset + user goal → structured problem statement & action plan</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Cleaning Advisor</div>
+            <div class="chip-desc">Reviews data profile → column-level cleaning recommendations</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>EDA Narrator</div>
+            <div class="chip-desc">Generates deep analytical narrative: patterns, correlations, hypotheses</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Q&A Chatbot</div>
+            <div class="chip-desc">Interactive assistant that answers any question about the loaded dataset</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row"><div class="flow-connector-v"></div></div>
+
+    <!-- Layer 5: Visualisation -->
+    <div class="flow-row">
+      <div class="layer c4" onclick="showDetail('viz')">
+        <div class="layer-header">
+          <div class="layer-icon">📊</div>
+          <div>
+            <div class="layer-title">Visualisation Layer</div>
+            <div class="layer-subtitle">Interactive Charts · EDA Plots · Quality Reports</div>
+          </div>
+          <span class="layer-badge">LAYER 5</span>
+        </div>
+        <div class="layer-body">
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Distribution Plots</div>
+            <div class="chip-desc">Plotly histogram + box marginal for any numeric column</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Correlation Heatmap</div>
+            <div class="chip-desc">px.imshow on full correlation matrix + top-pairs table</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Categorical Bar Charts</div>
+            <div class="chip-desc">Top-N value counts with color scale, configurable via slider</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Scatter + Trendline</div>
+            <div class="chip-desc">OLS trendline, color-by column, 3-column axis selector</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Missing Value Chart</div>
+            <div class="chip-desc">Bar chart of null % per column with Reds color scale</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row"><div class="flow-connector-v"></div></div>
+
+    <!-- Layer 6: Output -->
+    <div class="flow-row">
+      <div class="layer c1" onclick="showDetail('output')">
+        <div class="layer-header">
+          <div class="layer-icon">📤</div>
+          <div>
+            <div class="layer-title">Output Layer</div>
+            <div class="layer-subtitle">Export · Download · Insights Delivery</div>
+          </div>
+          <span class="layer-badge">LAYER 6</span>
+        </div>
+        <div class="layer-body">
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Cleaned CSV Download</div>
+            <div class="chip-desc">st.download_button streams cleaned DataFrame as CSV to user</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>AI Markdown Reports</div>
+            <div class="chip-desc">Claude's structured responses rendered as rich markdown in-app</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Interactive Charts</div>
+            <div class="chip-desc">All Plotly charts are zoomable, hoverable, and downloadable as PNG</div>
+          </div>
+          <div class="chip">
+            <div class="chip-name"><span class="chip-dot"></span>Metrics Dashboard</div>
+            <div class="chip-desc">st.metric cards showing rows, columns, missing %, duplicate count</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /flow-container -->
+
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <button class="close-btn" onclick="closeDetail()">✕ CLOSE</button>
+    <h2 id="detailTitle">—</h2>
+    <div class="meta" id="detailMeta">—</div>
+    <div class="detail-grid" id="detailGrid"></div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>UI / Output</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Data Ingestion</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>Processing / State</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent5)"></div>AI / Claude API</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Visualisation</div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="section-label">TECHNOLOGY STACK</div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <table class="tech-table">
+      <thead>
+        <tr>
+          <th>COMPONENT</th>
+          <th>LIBRARY / TOOL</th>
+          <th>PURPOSE</th>
+          <th>LAYER</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Web Framework</td><td>Streamlit</td><td>App server, UI rendering, session state</td><td><span class="tag">UI</span></td></tr>
+        <tr><td>Data Manipulation</td><td>Pandas + NumPy</td><td>DataFrame operations, statistics, cleaning</td><td><span class="tag">Processing</span></td></tr>
+        <tr><td>Interactive Charts</td><td>Plotly Express</td><td>All EDA visualisations</td><td><span class="tag">Viz</span></td></tr>
+        <tr><td>Database ORM</td><td>SQLAlchemy</td><td>SQL database connections</td><td><span class="tag">Ingestion</span></td></tr>
+        <tr><td>Excel Support</td><td>openpyxl</td><td>Reading .xlsx / .xls files</td><td><span class="tag">Ingestion</span></td></tr>
+        <tr><td>AI Engine</td><td>Anthropic SDK</td><td>Claude Sonnet 4 API calls</td><td><span class="tag">AI</span></td></tr>
+        <tr><td>LLM Model</td><td>claude-sonnet-4</td><td>Problem definition, cleaning advice, EDA insights</td><td><span class="tag">AI</span></td></tr>
+        <tr><td>Static Charts</td><td>Matplotlib / Seaborn</td><td>Fallback and custom plots</td><td><span class="tag">Viz</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Data Flow -->
+  <div class="section-label" style="margin-top:48px;">DATA FLOW</div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;">
+    <div style="font-family:var(--mono);font-size:0.8rem;line-height:2;color:var(--muted);">
+      <span style="color:var(--accent1)">USER</span>
+      &nbsp;→&nbsp;uploads file / enters SQL query
+      &nbsp;→&nbsp;<span style="color:var(--accent2)">INGESTION LAYER</span>
+      &nbsp;→&nbsp;parsed into <code style="color:var(--accent3)">pd.DataFrame</code><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;<span style="color:var(--accent3)">PROCESSING LAYER</span>
+      &nbsp;→&nbsp;<code style="color:var(--accent3)">df_summary()</code> generates text profile<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;<span style="color:var(--accent5)">AI LAYER</span>
+      &nbsp;→&nbsp;prompt + profile sent to <code style="color:var(--accent5)">claude-sonnet-4</code> via HTTPS<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;Claude response returned as markdown string<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;<span style="color:var(--accent4)">VIZ LAYER</span>
+      &nbsp;→&nbsp;Plotly charts rendered alongside AI insights<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;<span style="color:var(--accent1)">OUTPUT LAYER</span>
+      &nbsp;→&nbsp;user sees charts + AI narrative + download button
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Detail data & logic -->
+<script>
+const details = {
+  ui: {
+    title: "🖥️ User Interface Layer",
+    meta: "Technology: Streamlit · Python · Browser",
+    cards: [
+      { title: "Streamlit Framework", body: "Streamlit converts Python scripts into interactive web apps with zero frontend code. It re-runs the script top-to-bottom on every user interaction, making it perfect for data apps." },
+      { title: "Sidebar", body: "The sidebar holds persistent controls: the Anthropic API key (password field) and the data source selector. These drive the rest of the app's behavior." },
+      { title: "Tab Navigation", body: "Four main sections are organized as tabs: Load Data, Problem Definition, Data Cleaning, and EDA. This gives users a clear step-by-step workflow." },
+      { title: "Widgets Used", list: ["st.file_uploader — file input", "st.text_area — problem description", "st.selectbox — column/source selection", "st.button — trigger AI calls", "st.download_button — export results", "st.metric — KPI cards", "st.expander — collapsible previews"] }
+    ]
+  },
+  ingestion: {
+    title: "📥 Data Ingestion Layer",
+    meta: "Technology: Pandas · SQLAlchemy · openpyxl · json",
+    cards: [
+      { title: "CSV / Excel", body: "Uses pandas.read_csv() and pandas.read_excel() (backed by openpyxl) to load tabular files. Handles encoding differences and multiple sheets." },
+      { title: "SQL Database", body: "SQLAlchemy creates a database engine from a connection string. Supports SQLite (local files), PostgreSQL, MySQL, and more. The user provides any SELECT query." },
+      { title: "JSON / API Data", body: "json.load() parses the file, then pd.json_normalize() flattens nested JSON objects into a flat 2D DataFrame — essential for API response data." },
+      { title: "Text / Unstructured", body: "Plain .txt files are read line-by-line and stored as a single-column DataFrame. This enables basic NLP workflows and text analysis pipelines." }
+    ]
+  },
+  processing: {
+    title: "⚙️ Core Processing Layer",
+    meta: "Technology: Pandas · NumPy · Streamlit Session State",
+    cards: [
+      { title: "df_summary() Function", body: "The most critical bridge between data and AI. It generates a compact text report (shape, dtypes, missing values, describe stats, sample rows) that fits in a Claude prompt without token overload." },
+      { title: "Data Quality Engine", body: "Computes missing value counts and percentages, identifies duplicate rows, maps column data types, and calculates descriptive statistics — all used in the Quality Report tab." },
+      { title: "Auto-Clean Pipeline", body: "A configurable sequence: (1) drop duplicates, (2) drop >70% null columns, (3) median-impute numeric nulls, (4) fill categorical nulls with 'Unknown', (5) strip whitespace." },
+      { title: "Session State", body: "st.session_state persists the cleaned DataFrame (df_clean) and the AI-generated problem definition across tab switches. Without this, Streamlit would lose data on every interaction." }
+    ]
+  },
+  ai: {
+    title: "🤖 AI Intelligence Layer",
+    meta: "Technology: Anthropic SDK · Claude Sonnet 4 · HTTPS API",
+    cards: [
+      { title: "ask_claude() Function", body: "A clean wrapper around the Anthropic messages.create() call. Accepts a system prompt and user message, returns the response text. All AI features route through this single function." },
+      { title: "Problem Definer", body: "Sends dataset profile + user's goal description to Claude. Receives back: problem statement, task type recommendation, target variable, challenges, success metrics, and action plan." },
+      { title: "Cleaning Advisor", body: "Sends the full df_summary to Claude with a prompt asking for column-level cleaning recommendations: imputation strategies, encoding advice, outlier treatment, and feature engineering ideas." },
+      { title: "EDA Narrator", body: "The most complex prompt. Includes problem context + dataset profile and asks Claude to narrate: data overview, distribution insights, correlation analysis, feature importance hypotheses, and next steps." },
+      { title: "Q&A Chatbot", body: "An open-ended interface where users type any question. Claude answers using the dataset profile as context. This gives the agent conversational flexibility beyond fixed analyses." },
+      { title: "Model: Claude Sonnet 4", body: "Uses claude-sonnet-4-20250514 — Anthropic's best balance of intelligence and speed. max_tokens=2048 ensures detailed responses without excessive cost." }
+    ]
+  },
+  viz: {
+    title: "📊 Visualisation Layer",
+    meta: "Technology: Plotly Express · Plotly Graph Objects · Matplotlib",
+    cards: [
+      { title: "Distribution Histogram", body: "px.histogram with marginal='box' shows both the frequency distribution and a box plot overlay. Users select any numeric column from a dropdown." },
+      { title: "Correlation Heatmap", body: "px.imshow renders the full Pearson correlation matrix with annotated values. A separate table lists the top 15 most correlated feature pairs." },
+      { title: "Categorical Bar Chart", body: "Plots top-N value counts for any categorical column. A slider lets users control how many categories to display (5–30). Color encodes frequency." },
+      { title: "Scatter Plot + OLS", body: "Supports X axis, Y axis, and an optional color-by column. When no color column is selected, Plotly adds an OLS trendline automatically." },
+      { title: "Missing Value Chart", body: "A dedicated bar chart in the cleaning tab shows missing % per column sorted descending, using the Reds color scale to highlight severity." }
+    ]
+  },
+  output: {
+    title: "📤 Output Layer",
+    meta: "Technology: Streamlit · Plotly PNG Export · CSV Download",
+    cards: [
+      { title: "Cleaned CSV Download", body: "After Auto-Clean, st.download_button serializes the cleaned DataFrame to CSV bytes in memory and delivers it to the browser — no file system writes needed." },
+      { title: "AI Markdown Reports", body: "Claude's responses are rendered with st.markdown(), which supports headers, bullet lists, bold text, and code blocks — making the AI output look like a professional report." },
+      { title: "Interactive Plotly Charts", body: "Every Plotly chart includes built-in controls: zoom, pan, hover tooltips, legend toggle, and a camera icon to download as PNG — all without extra code." },
+      { title: "Metrics Dashboard", body: "st.metric displays four KPIs at a glance: total rows, total columns, missing cell count with %, and duplicate row count — visible before any analysis begins." }
+    ]
+  }
+};
+
+function showDetail(key) {
+  const d = details[key];
+  document.getElementById('detailTitle').textContent = d.title;
+  document.getElementById('detailMeta').textContent = d.meta;
+  const grid = document.getElementById('detailGrid');
+  grid.innerHTML = d.cards.map(c => `
+    <div class="detail-card">
+      <h3>${c.title}</h3>
+      ${c.body ? `<p>${c.body}</p>` : ''}
+      ${c.list ? `<ul>${c.list.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
+    </div>
+  `).join('');
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('active');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('active');
+}
+</script>
+</body>
+</html>

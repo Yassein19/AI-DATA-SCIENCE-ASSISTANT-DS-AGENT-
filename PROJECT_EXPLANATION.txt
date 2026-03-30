@@ -1,0 +1,96 @@
+==========================================================================
+                AI DATA SCIENCE ASSISTANT (DS AGENT)
+==========================================================================
+
+1. OVERVIEW
+-----------
+The AI Data Science Assistant is a comprehensive Streamlit-based web 
+application designed to automate and augment the initial phases of a 
+data science project. It bridges the gap between raw data and actionable 
+insights by combining powerful data manipulation (Pandas) with cutting-edge 
+Generative AI (Claude Sonnet 4 via Anthropic).
+
+The agent guides the user through a structured workflow:
+Data Loading -> Problem Definition -> Data Cleaning -> Exploratory Analysis (EDA).
+
+2. CORE TECHNOLOGY STACK
+------------------------
+- Frontend/App Framework:  Streamlit
+- Data Manipulation:       Pandas, NumPy
+- Visualisation:           Plotly Express, Matplotlib, Seaborn
+- Database Connection:     SQLAlchemy
+- AI Intelligence:         Anthropic API (Claude 3.5 Sonnet / 4)
+- File Parsing:            openpyxl (Excel), json (JSON)
+
+3. KEY FEATURES
+---------------
+
+A. MULTI-SOURCE DATA INGESTION
+   The app supports loading data from:
+   - CSV and Excel (.xlsx, .xls) files.
+   - SQL Databases (via connection strings).
+   - JSON files and local API exports.
+   - Plain text (.txt) files.
+
+B. AI PROBLEM DEFINITION
+   Users can describe their goals in plain English (e.g., "Predict churn 
+   based on customer usage"). The AI analyzes the dataset structure and 
+   provides:
+   - A precise problem statement.
+   - Recommended ML task type (Classification, Regression, etc.).
+   - Suggested target variables and success metrics.
+   - A high-level action plan.
+
+C. DATA QUALITY & CLEANING
+   - Quality Report: Visualizes missing values, duplicates, and data types.
+   - AI Suggestions: Claude provides column-level advice on imputation, 
+     encoding, and feature engineering.
+   - Auto-Clean: One-click actions to drop duplicates, fill missing values, 
+     and strip whitespace.
+   - Export: Download the cleaned dataset as a CSV.
+
+D. INTERACTIVE EDA (EXPLORATORY DATA ANALYSIS)
+   - Distributions: Histograms and box plots for numeric columns.
+   - Correlations: Heatmaps and top-correlated feature pairs.
+   - Categorical Analysis: Bar charts of top values.
+   - Scatter Plots: Multi-variable analysis with trendlines.
+   - AI Insights: A deep, automated narrative explaining the hidden 
+     patterns and "story" within the data.
+
+4. SYSTEM ARCHITECTURE
+----------------------
+The project follows a modular, layered design:
+1. UI LAYER (Streamlit): Handles all user interactions and rendering.
+2. INGESTION LAYER: Parses various formats into a unified Pandas DataFrame.
+3. PROCESSING LAYER: Generates data summaries (df_summary) and applies 
+   cleaning logic.
+4. AI BRAIN (Anthropic API): The "intelligence" that interprets data 
+   profiles and generates natural language reports.
+5. VIZ LAYER (Plotly): Generates interactive, zoomable, and downloadable 
+   charts.
+6. OUTPUT LAYER: Delivers cleaned files and Markdown-formatted AI reports.
+
+5. HOW TO RUN THE PROJECT
+-------------------------
+1. Install dependencies:
+   pip install streamlit pandas numpy matplotlib seaborn plotly openpyxl sqlalchemy anthropic
+
+2. Launch the server:
+   streamlit run ds_agent.py
+
+3. Access via browser:
+   http://localhost:8501
+
+4. Enter your Anthropic API Key in the sidebar to unlock all AI-powered 
+   features.
+
+6. FILE STRUCTURE
+-----------------
+- ds_agent.py                 : Main application logic and UI.
+- requirments.txt             : List of Python dependencies.
+- ds_agent_architecture.html  : Visual documentation of the system's design.
+- PROJECT_EXPLANATION.txt     : This file.
+
+==========================================================================
+Built with ❤️ for Data Scientists and Analysts.
+==========================================================================
